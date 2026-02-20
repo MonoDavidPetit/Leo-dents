@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Aprèn amb en Leo!</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --yellow:#FFD93D; --orange:#FF6B35; --green:#6BCB77; --pink:#FF6B9D; --blue:#4ECDC4; --purple:#A78BFA; --text:#2d1b69; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; background:#e8f9ff; overflow:hidden; font-family:'Nunito',sans-serif; touch-action:manipulation; }
+
+  .app { display:flex; flex-direction:column; height:100dvh; max-width:480px; margin:0 auto; position:relative; }
+
+  .header { background:var(--yellow); padding:10px 16px 8px; display:flex; align-items:center; justify-content:space-between; border-radius:0 0 20px 20px; box-shadow:0 4px 12px rgba(255,107,53,.25); flex-shrink:0; }
+  .header-title { font-family:'Fredoka One',cursive; font-size:clamp(17px,5vw,22px); color:var(--orange); }
+  .header-sub { font-size:clamp(10px,2.8vw,12px); color:#a05800; font-weight:700; }
+  .stars-display { display:flex; gap:3px; font-size:clamp(18px,5vw,24px); }
+  .star-icon { opacity:.22; transition:all .4s; }
+  .star-icon.earned { opacity:1; animation:star-pop .4s cubic-bezier(.36,.07,.19,.97); }
+  @keyframes star-pop { 0%{transform:scale(1)} 50%{transform:scale(1.7) rotate(20deg)} 100%{transform:scale(1)} }
+
+  .scene { flex:1; position:relative; overflow:hidden; background:linear-gradient(to bottom,#c9f0ff 0%,#e8f9ff 60%,#d4f5c4 100%); min-height:0; }
+  .wall { position:absolute; top:0; left:0; right:0; bottom:30%; background:repeating-linear-gradient(90deg,#fffde8 0px,#fffde8 78px,#f5f0d8 78px,#f5f0d8 80px); }
+  .floor { position:absolute; bottom:0; left:0; right:0; height:30%; background:repeating-linear-gradient(90deg,#f0e8d4 0px,#f0e8d4 48px,#e8ddc8 48px,#e8ddc8 50px); border-top:4px solid #d4c8a8; }
+  .mirror { position:absolute; top:6%; left:50%; transform:translateX(-50%); width:72px; height:82px; background:linear-gradient(135deg,#d0f0ff,#b0e0f8); border:5px solid #8ed4f0; border-radius:12px 12px 36px 36px; box-shadow:0 4px 12px rgba(100,180,220,.4),inset 0 0 20px rgba(255,255,255,.4); }
+  .mirror::after { content:'✨'; position:absolute; top:5px; right:6px; font-size:13px; opacity:.7; }
+  .sink { position:absolute; bottom:28%; left:50%; transform:translateX(-50%); width:96px; height:42px; background:linear-gradient(to bottom,#f5f5f5,#e8e8e8); border:3px solid #ccc; border-radius:8px 8px 20px 20px; box-shadow:0 4px 8px rgba(0,0,0,.1); }
+  .sink::before { content:''; position:absolute; top:7px; left:50%; transform:translateX(-50%); width:38px; height:18px; background:#c8e8f8; border-radius:4px 4px 10px 10px; border:2px solid #aad0e8; }
+  .sink::after { content:''; position:absolute; top:-16px; left:50%; transform:translateX(-50%); width:8px; height:16px; background:#d4d4d4; border-radius:4px 4px 0 0; border:2px solid #bbb; }
+
+  .water-drop { position:absolute; bottom:26%; left:calc(50% - 3px); width:6px; height:10px; background:#74c0fc; border-radius:50% 50% 50% 50%/60% 60% 40% 40%; opacity:0; }
+  .water-drop.dripping { animation:drip .6s infinite ease-in; }
+  .water-drop:nth-child(2){ animation-delay:.2s; left:calc(50% + 5px); }
+  .water-drop:nth-child(3){ animation-delay:.4s; left:calc(50% - 8px); }
+  @keyframes drip { 0%{opacity:1;transform:translateY(0)} 80%{opacity:.8;transform:translateY(14px)} 100%{opacity:0;transform:translateY(20px)} }
+
+  .foam { position:absolute; border-radius:50%; background:rgba(255,255,255,.88); border:2px solid rgba(180,220,255,.6); opacity:0; transition:opacity .5s; pointer-events:none; }
+  .foam.show { opacity:1; animation:bubble-float 1.5s infinite ease-in-out; }
+  @keyframes bubble-float { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-8px) scale(1.1)} }
+
+  .character-wrap { position:absolute; bottom:28%; left:50%; transform:translateX(-50%); width:88px; transition:all .6s cubic-bezier(.4,0,.2,1); }
+  #arm-right { transform-origin:68px 52px; transition:transform .3s ease; }
+  .brushing #arm-right { animation:brush-arm .5s infinite alternate ease-in-out; }
+  @keyframes brush-arm { from{transform:rotate(-15deg)} to{transform:rotate(22deg)} }
+  #toothbrush { opacity:0; transition:opacity .5s; }
+  #toothbrush.show { opacity:1; }
+  #paste-blob { opacity:0; transition:opacity .5s; }
+  #paste-blob.show { opacity:1; }
+  #eyes-happy { opacity:0; transition:opacity .4s; }
+  #eyes-normal { transition:opacity .4s; }
+  .happy #eyes-happy { opacity:1; }
+  .happy #eyes-normal { opacity:0; }
+  #mouth-brush { opacity:0; transition:opacity .4s; }
+  #mouth-normal { transition:opacity .4s; }
+  .brushing #mouth-brush { opacity:1; }
+  .brushing #mouth-normal { opacity:0; }
+  .bounce { animation:char-bounce .5s cubic-bezier(.36,.07,.19,.97) 2; }
+  @keyframes char-bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 40%{transform:translateX(-50%) translateY(-14px)} }
+
+  .status-bar { position:absolute; top:8px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.93); border-radius:20px; padding:5px 14px; font-size:11px; font-weight:700; color:#666; white-space:nowrap; z-index:5; max-width:88%; text-align:center; overflow:hidden; text-overflow:ellipsis; box-shadow:0 2px 8px rgba(0,0,0,.1); transition:all .3s; }
+  .status-bar.listening { color:var(--pink); background:#fff0f6; }
+  .status-bar.heard { color:var(--green); background:#f0fff4; }
+  .status-bar.error { color:#e53935; background:#fff0f0; }
+
+  .phrases { flex-shrink:0; padding:10px 12px; display:flex; flex-direction:column; gap:7px; background:#fff; border-radius:22px 22px 0 0; box-shadow:0 -4px 18px rgba(0,0,0,.08); }
+  .phrase-card { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:14px; border:3px solid transparent; background:#f8f8ff; transition:all .3s ease; }
+  .phrase-card.active { border-color:var(--yellow); background:#fffde8; box-shadow:0 3px 12px rgba(255,217,61,.3); }
+  .phrase-card.done { border-color:var(--green); background:#f0fff4; }
+  .phrase-emoji { font-size:clamp(22px,6vw,30px); flex-shrink:0; width:36px; text-align:center; }
+  .phrase-text-wrap { flex:1; min-width:0; }
+  .phrase-label { font-size:clamp(9px,2.3vw,10px); color:#999; font-weight:800; text-transform:uppercase; letter-spacing:.5px; margin-bottom:1px; }
+  .phrase-text { font-family:'Fredoka One',cursive; font-size:clamp(16px,4.5vw,20px); color:var(--text); line-height:1.2; }
+  .phrase-card.done .phrase-text { color:#2a7a3b; }
+  .phrase-check { font-size:20px; opacity:0; transform:scale(0); transition:all .3s cubic-bezier(.36,.07,.19,.97); flex-shrink:0; }
+  .phrase-card.done .phrase-check { opacity:1; transform:scale(1); animation:check-pop .4s cubic-bezier(.36,.07,.19,.97); }
+  @keyframes check-pop { 0%{transform:scale(0) rotate(-20deg)} 60%{transform:scale(1.4) rotate(5deg)} 100%{transform:scale(1) rotate(0)} }
+
+  .mic-wrap { position:absolute; bottom:16px; right:16px; z-index:20; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .mic-btn { width:64px; height:64px; border-radius:50%; background:var(--orange); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:28px; box-shadow:0 4px 18px rgba(255,107,53,.45); transition:background .2s; -webkit-appearance:none; position:relative; user-select:none; -webkit-user-select:none; }
+  .mic-btn.recording { background:var(--pink); animation:mic-pulse 1s infinite; }
+  .mic-btn.processing { background:var(--purple); animation:none; }
+  @keyframes mic-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+  .mic-ring { position:absolute; inset:-6px; border-radius:50%; border:3px solid rgba(255,107,157,.4); opacity:0; pointer-events:none; }
+  .mic-btn.recording .mic-ring { opacity:1; animation:ring-expand 1.2s infinite ease-out; }
+  @keyframes ring-expand { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(1.6);opacity:0} }
+  .mic-label { font-size:10px; font-weight:800; color:#888; text-align:center; }
+
+  .celebration { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(255,255,255,.93); z-index:50; opacity:0; pointer-events:none; transition:opacity .5s; }
+  .celebration.show { opacity:1; pointer-events:all; }
+  .celebration-emoji { font-size:68px; animation:cel-bounce .6s infinite alternate ease-in-out; }
+  @keyframes cel-bounce { from{transform:scale(1) rotate(-5deg)} to{transform:scale(1.1) rotate(5deg)} }
+  .celebration-title { font-family:'Fredoka One',cursive; font-size:clamp(26px,7vw,36px); color:var(--orange); margin-top:10px; text-align:center; }
+  .celebration-sub { font-size:clamp(13px,3.5vw,16px); color:#888; margin-top:5px; font-weight:700; }
+  .confetti-piece { position:absolute; border-radius:2px; animation:confetti-fall 2s infinite ease-in; opacity:0; }
+  @keyframes confetti-fall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(120vh) rotate(720deg);opacity:0} }
+  .retry-btn { margin-top:18px; font-family:'Fredoka One',cursive; font-size:17px; background:var(--yellow); color:var(--orange); border:none; padding:12px 28px; border-radius:50px; cursor:pointer; box-shadow:0 4px 12px rgba(255,107,53,.3); }
+  .retry-btn:active { transform:scale(.95); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div>
+      <div class="header-title">🦷 Les Dents!</div>
+      <div class="header-sub">Mantén premut 🎤 i llegeix</div>
+    </div>
+    <div class="stars-display">
+      <span class="star-icon" id="star1">⭐</span>
+      <span class="star-icon" id="star2">⭐</span>
+      <span class="star-icon" id="star3">⭐</span>
+    </div>
+  </div>
+
+  <div class="scene">
+    <div class="wall"></div>
+    <div class="floor"></div>
+    <div class="mirror"></div>
+    <div class="sink"></div>
+    <div class="water-drop" id="wd1"></div>
+    <div class="water-drop" id="wd2"></div>
+    <div class="water-drop" id="wd3"></div>
+    <div class="foam" id="foam1" style="width:14px;height:14px;left:52%;bottom:37%;animation-delay:0s"></div>
+    <div class="foam" id="foam2" style="width:10px;height:10px;left:47%;bottom:40%;animation-delay:.3s"></div>
+    <div class="foam" id="foam3" style="width:8px;height:8px;left:55%;bottom:42%;animation-delay:.6s"></div>
+    <div class="foam" id="foam4" style="width:12px;height:12px;left:44%;bottom:38%;animation-delay:.9s"></div>
+
+    <div class="character-wrap" id="character">
+      <svg id="leo" viewBox="0 0 100 130" width="88" height="114" overflow="visible">
+        <ellipse cx="50" cy="128" rx="26" ry="5" fill="rgba(0,0,0,.1)"/>
+        <rect x="28" y="98" width="44" height="20" rx="6" fill="#A78BFA"/>
+        <rect x="30" y="112" width="16" height="18" rx="6" fill="#A78BFA"/>
+        <rect x="54" y="112" width="16" height="18" rx="6" fill="#A78BFA"/>
+        <ellipse cx="38" cy="128" rx="11" ry="6" fill="#2d1b69"/>
+        <ellipse cx="62" cy="128" rx="11" ry="6" fill="#2d1b69"/>
+        <rect x="28" y="62" width="44" height="40" rx="12" fill="#4ECDC4"/>
+        <rect x="28" y="70" width="44" height="5" fill="#3dbdb5" opacity=".5"/>
+        <rect x="28" y="81" width="44" height="5" fill="#3dbdb5" opacity=".5"/>
+        <rect x="11" y="62" width="17" height="34" rx="8" fill="#4ECDC4"/>
+        <ellipse cx="19" cy="96" rx="8" ry="6" fill="#f5c8a0"/>
+        <g id="arm-right">
+          <rect x="72" y="62" width="17" height="34" rx="8" fill="#4ECDC4"/>
+          <ellipse cx="80" cy="96" rx="8" ry="6" fill="#f5c8a0"/>
+          <g id="toothbrush">
+            <rect x="77" y="84" width="6" height="26" rx="3" fill="#FF6B35"/>
+            <rect x="76" y="78" width="8" height="9" rx="2" fill="#FFD93D"/>
+            <rect x="76" y="76" width="2" height="5" rx="1" fill="white"/>
+            <rect x="79" y="76" width="2" height="5" rx="1" fill="white"/>
+            <rect x="82" y="76" width="2" height="5" rx="1" fill="white"/>
+            <g id="paste-blob">
+              <path d="M76 77 Q80 72 84 77" stroke="#6BCB77" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+            </g>
+          </g>
+        </g>
+        <rect x="42" y="54" width="16" height="13" rx="6" fill="#f5c8a0"/>
+        <ellipse cx="50" cy="36" rx="28" ry="27" fill="#f5c8a0"/>
+        <path d="M22,28 Q24,7 50,7 Q76,7 78,28 Q70,13 50,14 Q30,13 22,28Z" fill="#1a0800"/>
+        <path d="M46,7 Q50,1 54,7" stroke="#1a0800" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <ellipse cx="22" cy="36" rx="6" ry="8" fill="#f5c8a0"/>
+        <ellipse cx="78" cy="36" rx="6" ry="8" fill="#f5c8a0"/>
+        <ellipse cx="22" cy="36" rx="3" ry="5" fill="#f0b090"/>
+        <ellipse cx="78" cy="36" rx="3" ry="5" fill="#f0b090"/>
+        <g id="eyes-normal">
+          <circle cx="38" cy="34" r="6" fill="white"/>
+          <circle cx="62" cy="34" r="6" fill="white"/>
+          <circle cx="38" cy="35" r="3.5" fill="#2d1b69"/>
+          <circle cx="62" cy="35" r="3.5" fill="#2d1b69"/>
+          <circle cx="39.5" cy="33.5" r="1.2" fill="white"/>
+          <circle cx="63.5" cy="33.5" r="1.2" fill="white"/>
+        </g>
+        <g id="eyes-happy">
+          <path d="M32,34 Q38,28 44,34" stroke="#2d1b69" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M56,34 Q62,28 68,34" stroke="#2d1b69" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </g>
+        <g id="mouth-normal">
+          <path d="M42,48 Q50,54 58,48" stroke="#2d1b69" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        </g>
+        <g id="mouth-brush">
+          <ellipse cx="50" cy="50" rx="10" ry="7" fill="white" stroke="#2d1b69" stroke-width="2"/>
+          <ellipse cx="50" cy="50" rx="8" ry="5" fill="#ff9999" opacity=".5"/>
+          <rect x="42" y="46" width="7" height="6" rx="2" fill="white" stroke="#ddd" stroke-width="1"/>
+          <rect x="51" y="46" width="7" height="6" rx="2" fill="white" stroke="#ddd" stroke-width="1"/>
+        </g>
+        <ellipse cx="30" cy="42" rx="7" ry="5" fill="#ffb3ba" opacity=".4"/>
+        <ellipse cx="70" cy="42" rx="7" ry="5" fill="#ffb3ba" opacity=".4"/>
+        <ellipse cx="50" cy="43" rx="4" ry="3" fill="#f0b090"/>
+      </svg>
+    </div>
+
+    <div class="status-bar" id="statusBar">Mantén premut 🎤 i llegeix en veu alta</div>
+  </div>
+
+  <div class="phrases">
+    <div class="phrase-card active" id="card-0">
+      <div class="phrase-emoji">🪥</div>
+      <div class="phrase-text-wrap">
+        <div class="phrase-label">Pas 1</div>
+        <div class="phrase-text">Agafa el raspall</div>
+      </div>
+      <div class="phrase-check">✅</div>
+    </div>
+    <div class="phrase-card" id="card-1">
+      <div class="phrase-emoji">🟢</div>
+      <div class="phrase-text-wrap">
+        <div class="phrase-label">Pas 2</div>
+        <div class="phrase-text">Posa el dentífric</div>
+      </div>
+      <div class="phrase-check">✅</div>
+    </div>
+    <div class="phrase-card" id="card-2">
+      <div class="phrase-emoji">🫧</div>
+      <div class="phrase-text-wrap">
+        <div class="phrase-label">Pas 3</div>
+        <div class="phrase-text">Es renta les dents</div>
+      </div>
+      <div class="phrase-check">✅</div>
+    </div>
+  </div>
+
+  <div class="mic-wrap">
+    <button class="mic-btn" id="micBtn">
+      <div class="mic-ring"></div>
+      <span id="micIcon">🎤</span>
+    </button>
+    <div class="mic-label" id="micLabel">Mantén premut</div>
+  </div>
+
+  <div class="celebration" id="celebration">
+    <div class="celebration-emoji">🦷✨</div>
+    <div class="celebration-title">Molt bé, campió!</div>
+    <div class="celebration-sub">Has rentat les dents! 🎉</div>
+    <button class="retry-btn" onclick="resetGame()">🔄 Tornar a jugar</button>
+  </div>
+</div>
+
+<script>
+const STEPS = [
+  { id:0, phrase:"Agafa el raspall",   keywords:['raspall','agafa','cepill'], action: doStep0 },
+  { id:1, phrase:"Posa el dentífric",  keywords:['dentífric','dentifric','pasta','posa'], action: doStep1 },
+  { id:2, phrase:"Es renta les dents", keywords:['renta','dents','cepilla'], action: doStep2 },
+];
+
+let currentStep  = 0;
+let starsEarned  = 0;
+let mediaRecorder = null;
+let audioChunks   = [];
+let isRecording   = false;
+let isProcessing  = false;
+let micStream     = null;
+
+// ── GET MIC STREAM ────────────────────────────────────────────────────────
+async function getStream() {
+  if (micStream) return micStream;
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    return micStream;
+  } catch(e) {
+    const msg = e.name === 'NotAllowedError'
+      ? '❌ Permís denegat. Activa el micròfon al navegador.'
+      : '❌ No s\'ha pogut accedir al micròfon.';
+    updateStatus(msg, 'error');
+    return null;
+  }
+}
+
+// ── RECORD ────────────────────────────────────────────────────────────────
+async function startRecording() {
+  if (isRecording || isProcessing) return;
+  if (currentStep >= STEPS.length) return;
+
+  const s = await getStream();
+  if (!s) return;
+
+  audioChunks = [];
+  const mime = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg','audio/mp4','']
+    .find(m => m === '' || MediaRecorder.isTypeSupported(m));
+
+  try {
+    mediaRecorder = mime ? new MediaRecorder(s, { mimeType: mime }) : new MediaRecorder(s);
+  } catch(e) {
+    mediaRecorder = new MediaRecorder(s);
+  }
+
+  mediaRecorder.ondataavailable = e => { if (e.data?.size > 0) audioChunks.push(e.data); };
+  mediaRecorder.start(100);
+  isRecording = true;
+
+  const btn = document.getElementById('micBtn');
+  btn.classList.add('recording');
+  document.getElementById('micIcon').textContent = '🔴';
+  document.getElementById('micLabel').textContent = 'Parlant...';
+  updateStatus('T\'escolto! Llegeix la frase 👂', 'listening');
+}
+
+async function stopRecording() {
+  if (!isRecording || !mediaRecorder) return;
+  isRecording = false;
+  isProcessing = true;
+
+  const btn = document.getElementById('micBtn');
+  btn.classList.remove('recording');
+  btn.classList.add('processing');
+  document.getElementById('micIcon').textContent = '⏳';
+  document.getElementById('micLabel').textContent = 'Analitzant...';
+  updateStatus('Analitzant... ⏳', '');
+
+  await new Promise(res => { mediaRecorder.onstop = res; mediaRecorder.stop(); });
+
+  if (!audioChunks.length) {
+    resetMicBtn(); isProcessing = false;
+    updateStatus('No he sentit res. Torna-ho a provar! 🎤', 'error');
+    return;
+  }
+
+  const mime = mediaRecorder.mimeType || 'audio/webm';
+  const blob = new Blob(audioChunks, { type: mime });
+  await transcribeAndCheck(blob, mime);
+
+  isProcessing = false;
+  resetMicBtn();
+}
+
+function resetMicBtn() {
+  const btn = document.getElementById('micBtn');
+  btn.classList.remove('recording','processing');
+  document.getElementById('micIcon').textContent = '🎤';
+  document.getElementById('micLabel').textContent = 'Mantén premut';
+}
+
+// Touch
+const micBtn = document.getElementById('micBtn');
+micBtn.addEventListener('touchstart', e => { e.preventDefault(); startRecording(); }, { passive:false });
+micBtn.addEventListener('touchend',   e => { e.preventDefault(); stopRecording(); },  { passive:false });
+micBtn.addEventListener('touchcancel',e => { e.preventDefault(); stopRecording(); },  { passive:false });
+// Mouse
+micBtn.addEventListener('mousedown', startRecording);
+micBtn.addEventListener('mouseup',   stopRecording);
+micBtn.addEventListener('mouseleave', () => { if(isRecording) stopRecording(); });
+
+// ── ANTHROPIC API ─────────────────────────────────────────────────────────
+async function transcribeAndCheck(blob, mimeType) {
+  try {
+    const ab = await blob.arrayBuffer();
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+    const cleanMime = mimeType.split(';')[0] || 'audio/webm';
+    const step = STEPS[currentStep];
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 120,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Ets un assistent per a nens petits aprenent català.
+Escolta l'àudio. El nen hauria de dir: "${step.phrase}"
+Paraules clau acceptades: ${step.keywords.join(', ')}
+
+Respon ÚNICAMENT amb JSON vàlid, sense cap altre text:
+{"detected": true/false, "heard": "transcripció breu"}`
+            },
+            {
+              type: 'document',
+              source: { type: 'base64', media_type: cleanMime, data: b64 }
+            }
+          ]
+        }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || 'Error ' + res.status);
+    }
+
+    const data = await res.json();
+    const raw  = (data.content?.[0]?.text || '{}').replace(/```json|```/g,'').trim();
+    let result;
+    try { result = JSON.parse(raw); }
+    catch { result = { detected: raw.includes('"detected":true') || raw.includes('"detected": true'), heard: raw }; }
+
+    if (result.detected) {
+      updateStatus(`✅ He sentit: "${result.heard}"`, 'heard');
+      step.action();
+    } else {
+      const what = result.heard && result.heard !== 'silenci' && result.heard.length < 60
+        ? ` He sentit: "${result.heard}".` : '';
+      updateStatus(`${what} Torna-ho a provar: "${step.phrase}" 🎤`, 'error');
+    }
+  } catch(err) {
+    console.error(err);
+    updateStatus('❌ ' + (err.message || 'Error de connexió'), 'error');
+  }
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────
+function doStep0() {
+  document.getElementById('toothbrush').classList.add('show');
+  completeStep(0);
+}
+function doStep1() {
+  document.getElementById('paste-blob').classList.add('show');
+  completeStep(1);
+}
+function doStep2() {
+  const char = document.getElementById('character');
+  const leo  = document.getElementById('leo');
+  char.classList.add('brushing');
+  leo.classList.add('brushing');
+  document.querySelectorAll('.foam').forEach(f => f.classList.add('show'));
+  document.querySelectorAll('.water-drop').forEach(w => w.classList.add('dripping'));
+  completeStep(2);
+  setTimeout(() => {
+    char.classList.remove('brushing'); leo.classList.remove('brushing');
+    leo.classList.add('happy');
+    document.querySelectorAll('.water-drop').forEach(w => w.classList.remove('dripping'));
+  }, 2800);
+}
+
+function completeStep(idx) {
+  document.getElementById('card-'+idx).classList.remove('active');
+  document.getElementById('card-'+idx).classList.add('done');
+  starsEarned++;
+  document.getElementById('star'+starsEarned)?.classList.add('earned');
+  const char = document.getElementById('character');
+  char.classList.remove('bounce'); void char.offsetWidth; char.classList.add('bounce');
+  currentStep++;
+  setTimeout(() => {
+    if (currentStep < STEPS.length) {
+      document.getElementById('card-'+currentStep)?.classList.add('active');
+      updateStatus('Ara llegeix el pas ' + (currentStep+1) + '! 👇', '');
+    } else {
+      setTimeout(showCelebration, 900);
+    }
+  }, 900);
+}
+
+// ── CELEBRATION ───────────────────────────────────────────────────────────
+function showCelebration() {
+  const cel = document.getElementById('celebration');
+  const colors = ['#FFD93D','#FF6B35','#6BCB77','#4ECDC4','#FF6B9D','#A78BFA'];
+  for (let i=0; i<32; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.cssText = `left:${Math.random()*100}%;top:${-10+Math.random()*15}px;background:${colors[Math.floor(Math.random()*colors.length)]};animation-delay:${Math.random()*1.5}s;animation-duration:${1.5+Math.random()}s;width:${6+Math.random()*10}px;height:${6+Math.random()*10}px;border-radius:${Math.random()>.5?'50%':'2px'};`;
+    cel.appendChild(c);
+  }
+  cel.classList.add('show');
+}
+
+function resetGame() {
+  currentStep = 0; starsEarned = 0; micStream = null;
+  document.querySelectorAll('.star-icon').forEach(s => s.classList.remove('earned'));
+  document.querySelectorAll('.phrase-card').forEach((c,i) => {
+    c.classList.remove('done','active');
+    if(i===0) c.classList.add('active');
+  });
+  const char = document.getElementById('character');
+  const leo  = document.getElementById('leo');
+  char.className = 'character-wrap'; leo.className = '';
+  document.getElementById('toothbrush').classList.remove('show');
+  document.getElementById('paste-blob').classList.remove('show');
+  document.querySelectorAll('.foam').forEach(f => f.classList.remove('show'));
+  document.querySelectorAll('.water-drop').forEach(w => w.classList.remove('dripping'));
+  const cel = document.getElementById('celebration');
+  cel.classList.remove('show');
+  cel.querySelectorAll('.confetti-piece').forEach(c => c.remove());
+  resetMicBtn();
+  updateStatus('Mantén premut 🎤 i llegeix en veu alta', '');
+}
+
+function updateStatus(msg, type) {
+  const bar = document.getElementById('statusBar');
+  bar.textContent = msg;
+  bar.className = 'status-bar ' + (type||'');
+}
+</script>
+</body>
+</html>
